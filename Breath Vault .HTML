@@ -1,0 +1,718 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Breath Master AI – تحكم في النفس</title>
+  <style>
+    /* ========== متغيرات أساسية ========== */
+    :root {
+      --bg: #0a0a0f;
+      --surface: rgba(20, 20, 30, 0.7);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --primary: #00f0ff;
+      --secondary: #b44dff;
+      --accent: #ff3cac;
+      --text: #e0e0ff;
+      --text-secondary: #8888aa;
+      --danger: #ff3366;
+      --radius: 24px;
+      --transition: 0.3s ease;
+      --font: 'Segoe UI', 'Cairo', sans-serif;
+      --glass-blur: blur(18px);
+      --neon-glow: 0 0 12px rgba(0, 240, 255, 0.4), 0 0 30px rgba(0, 240, 255, 0.15);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* خلفية متحركة */
+    .bg-particles {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle at 30% 40%, #1a1a3e 0%, transparent 50%),
+                  radial-gradient(circle at 70% 60%, #2a1040 0%, transparent 50%);
+      opacity: 0.8;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 900px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: var(--glass-blur);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.6), var(--neon-glow);
+      margin: auto;
+    }
+
+    .screen {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      transition: opacity 0.2s;
+    }
+    .screen.active { display: flex; }
+
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--surface-border);
+      padding: 12px 8px;
+      z-index: 2;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: color var(--transition), transform 0.2s;
+      gap: 4px;
+    }
+    .nav-item i { font-size: 22px; }
+    .nav-item.active { color: var(--primary); transform: scale(1.1); }
+
+    .greeting-text {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+      margin: 10vh 0 20px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      color: #000;
+      font-weight: bold;
+      padding: 16px 32px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(176, 75, 255, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--surface-border);
+      color: white;
+      font-weight: bold;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 1rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 18px;
+      backdrop-filter: blur(8px);
+    }
+
+    .level-badge {
+      display: inline-flex;
+      background: var(--primary);
+      color: #000;
+      border-radius: 30px;
+      padding: 4px 14px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to left, var(--primary), var(--secondary));
+      border-radius: 10px;
+      transition: width 0.5s;
+    }
+
+    i { font-style: normal; }
+
+    .warning-box {
+      background: rgba(255, 51, 102, 0.1);
+      border-right: 4px solid var(--danger);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #ffb3c6;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .step-num {
+      background: var(--secondary);
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-particles"></div>
+<div class="app-container">
+  <!-- شاشة البداية -->
+  <div id="splashScreen" class="screen active">
+    <div style="flex:1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <h1 class="greeting-text">السيطرة على النفس…<br>السيطرة على العقل.</h1>
+      <button class="btn-primary" onclick="navigateTo('training')">
+        🌊 ابدأ التدريب
+      </button>
+    </div>
+  </div>
+
+  <!-- شاشة التدريب الرئيسية -->
+  <div id="trainingScreen" class="screen">
+    <!-- ========== قسم الإحماء والتحضير ========== -->
+    <div id="preparationPhase" style="display: flex; flex-direction: column; gap: 20px;">
+      <h2 style="text-align:center;">📅 تدريب اليوم – الفصل <span id="chapterNumber">1</span></h2>
+      <div class="card">
+        <div style="display:flex; justify-content:space-between;">
+          <span>المستوى</span>
+          <span class="level-badge" id="currentLevelBadge">Level 1</span>
+        </div>
+        <p style="color:var(--text-secondary); margin-top:8px;">الهدف: <span id="targetTimeDisplay">20</span> ثانية</p>
+      </div>
+
+      <!-- طور الإعداد -->
+      <div class="card" id="warmupCard">
+        <h3 style="margin-bottom:12px;">🧘 طور الإعداد (Preparation Phase)</h3>
+        <div id="warmupSteps"></div>
+        <div class="warning-box" style="margin-top:12px;">
+          ⚠️ تذكير: لا تفرط في التنفس (Hyperventilation) أبدًا. تنفس بعمق وبطء. توقف فورًا إذا شعرت بدوار.
+        </div>
+      </div>
+
+      <!-- التحدي الرئيسي -->
+      <div class="card" id="challengeCard">
+        <h3 style="margin-bottom:8px;">🎯 التحدي الرئيسي</h3>
+        <p id="challengeDescription"></p>
+        <div class="card" style="margin-top:12px; background: rgba(0,240,255,0.05);">
+          <strong>🔬 العلم وراء التحدي:</strong>
+          <p id="scienceNote" style="margin-top:6px;"></p>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="align-self:center;" onclick="startChallenge()">
+        ⏳ ابدأ التحدي الآن
+      </button>
+      <p style="text-align:center; color:var(--text-secondary);">بعد الضغط، سيبدأ المؤقت مباشرة</p>
+    </div>
+
+    <!-- ========== قسم التحدي النشط (عداد + رئة) ========== -->
+    <div id="activeChallenge" style="display: none; flex-direction: column; align-items: center; gap: 20px;">
+      <h2>⏱️ كتم النفس</h2>
+      <div class="timer-circle-container" style="position:relative;">
+        <svg width="200" height="200" id="timerSvg">
+          <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+          <circle id="timerCircle" cx="100" cy="100" r="90" fill="none" stroke="url(#gradient)" stroke-width="8"
+                  stroke-dasharray="565.48" stroke-dashoffset="0" stroke-linecap="round"
+                  transform="rotate(-90 100 100)" style="transition: stroke-dashoffset 0.1s;"/>
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00f0ff"/>
+              <stop offset="100%" stop-color="#b44dff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size: 3rem; font-weight: bold;" id="timerText">0</div>
+      </div>
+
+      <div class="lungs-animation">
+        <svg class="lung-svg" id="lungSvg" viewBox="0 0 100 100">
+          <path id="lungLeft" d="M30,40 Q15,25 30,15 Q40,10 45,25 L45,40 Q40,50 30,40Z" fill="#ff3cac" opacity="0.8"/>
+          <path id="lungRight" d="M70,40 Q85,25 70,15 Q60,10 55,25 L55,40 Q60,50 70,40Z" fill="#00f0ff" opacity="0.8"/>
+          <line x1="50" y1="10" x2="50" y2="30" stroke="#fff" stroke-width="3" opacity="0.6"/>
+        </svg>
+      </div>
+
+      <button class="btn-primary" id="stopChallengeBtn" onclick="stopBreathHold()">⏹️ إنهاء التحدي</button>
+      <p id="feedbackMsg" style="color:var(--text-secondary);"></p>
+
+      <div class="card" id="sessionResult" style="display:none; width:100%;">
+        <h3>نتيجة الجلسة</h3>
+        <p>أفضل زمن شخصي: <span id="bestTimeDisplay">--</span></p>
+        <p>💰 نقاط الأكسجين المكتسبة: +<span id="oxygenEarned">0</span></p>
+        <button class="btn-secondary" onclick="backToPreparation()">العودة للتدريبات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- شاشة الملف الشخصي -->
+  <div id="profileScreen" class="screen">
+    <h2>🏅 الملف الشخصي</h2>
+    <div class="card">
+      <p>المستوى: <span class="level-badge" id="profileLevel">1</span> - <span id="rankTitle">Air Seed</span></p>
+      <div class="progress-bar"><div class="progress-fill" id="xpProgress" style="width:0%"></div></div>
+      <p>أفضل زمن: <span id="profileBestTime">0</span> ثانية</p>
+      <p>سلسلة الأيام: <span id="streakDays">0</span> يوم</p>
+      <p>💰 نقاط الأكسجين: <span id="oxygenPoints">0</span></p>
+    </div>
+    <div class="card">
+      <h3>الإنجازات</h3>
+      <div id="achievementsList">لا توجد إنجازات بعد</div>
+    </div>
+  </div>
+
+  <!-- شاشة التحديات -->
+  <div id="challengesScreen" class="screen">
+    <h2>🌍 التحديات العالمية</h2>
+    <div class="card">
+      <p>🏆 لوحة الصدارة (أفضل 3)</p>
+      <ol>
+        <li>DeepDiver_99 - 4:35 دقيقة</li>
+        <li>BreathQueen - 3:58</li>
+        <li>O2Master - 3:42</li>
+      </ol>
+      <button class="btn-primary" style="margin-top:12px;" onclick="alert('التحدي القادم يبدأ غداً!')">انضم للتحدي</button>
+    </div>
+  </div>
+
+  <!-- شاشة الإعدادات -->
+  <div id="settingsScreen" class="screen">
+    <h2>⚙️ الإعدادات</h2>
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>الوضع الليلي</span>
+      <div id="nightModeToggle" onclick="toggleNightMode()" style="width:50px; height:24px; background:#555; border-radius:12px; position:relative; cursor:pointer;">
+        <div id="toggleThumb" style="width:20px; height:20px; background:white; border-radius:50%; position:absolute; top:2px; left:2px; transition:0.2s;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- شريط التنقل -->
+  <div class="bottom-nav">
+    <div class="nav-item active" data-screen="training" onclick="navigateTo('training')">🏠 تدريب</div>
+    <div class="nav-item" data-screen="profile" onclick="navigateTo('profile')">👤 حساب</div>
+    <div class="nav-item" data-screen="challenges" onclick="navigateTo('challenges')">🏆 تحديات</div>
+    <div class="nav-item" data-screen="settings" onclick="navigateTo('settings')">⚙️ إعدادات</div>
+  </div>
+</div>
+
+<script>
+  // ========== بيانات التطبيق ==========
+  const APP = {
+    currentScreen: 'splash',
+    user: {
+      level: 1,
+      bestTime: 0,
+      oxygenPoints: 100,
+      streak: 0,
+      lastTrainingDate: null,
+      achievements: [],
+      nightMode: true
+    },
+    timer: {
+      isRunning: false,
+      startTime: 0,
+      elapsed: 0,
+      target: 20,
+      intervalId: null
+    },
+    // مستويات مع أهداف زمنية
+    levels: [
+      { level: 1, title: 'Air Seed', time: 20 },
+      { level: 2, title: 'Breath Novice', time: 25 },
+      { level: 3, title: 'Oxygen Seeker', time: 30 },
+      { level: 4, title: 'Lung Opener', time: 40 },
+      { level: 5, title: 'Silent Lung', time: 60 },
+      { level: 6, title: 'Steady Flow', time: 72 },
+      { level: 7, title: 'Deep Breather', time: 85 },
+      { level: 8, title: 'Pressure Handler', time: 98 },
+      { level: 9, title: 'Zen Master', time: 110 },
+      { level: 10, title: 'Deep Human', time: 120 },
+      { level: 11, title: 'Aqua Lung', time: 132 },
+      { level: 12, title: 'CO₂ Warrior', time: 144 },
+      { level: 13, title: 'Silent Depth', time: 156 },
+      { level: 14, title: 'Pressure Dive', time: 168 },
+      { level: 15, title: 'Abyss Seeker', time: 180 },
+      { level: 16, title: "Neptune's Child", time: 194 },
+      { level: 17, title: 'Deep Silence', time: 208 },
+      { level: 18, title: 'Ocean Soul', time: 216 },
+      { level: 19, title: 'The Freediver', time: 224 },
+      { level: 20, title: 'Mammalian Dive', time: 232 },
+      { level: 21, title: 'Abyss Walker', time: 240 },
+      { level: 22, title: 'Blackout Proof', time: 252 },
+      { level: 23, title: 'Neural Calm', time: 264 },
+      { level: 24, title: 'Master of Breath', time: 276 },
+      { level: 25, title: 'Legendary Lung', time: 300 }
+    ]
+  };
+
+  // ========== دوال مساعدة ==========
+  function $(id) { return document.getElementById(id); }
+
+  function loadUserData() {
+    const saved = localStorage.getItem('breathMasterUser');
+    if (saved) APP.user = JSON.parse(saved);
+  }
+  function saveUserData() {
+    localStorage.setItem('breathMasterUser', JSON.stringify(APP.user));
+  }
+
+  function navigateTo(screenName) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const screenMap = {
+      splash: 'splashScreen',
+      training: 'trainingScreen',
+      profile: 'profileScreen',
+      challenges: 'challengesScreen',
+      settings: 'settingsScreen'
+    };
+    const screenId = screenMap[screenName];
+    if (screenId) $(screenId).classList.add('active');
+    APP.currentScreen = screenName;
+
+    // تحديث شريط التنقل
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.screen === screenName) item.classList.add('active');
+    });
+
+    if (screenName === 'profile') updateProfileScreen();
+    if (screenName === 'training') {
+      updateTrainingScreen();
+      // تأكد من عرض مرحلة الإعداد وليس التحدي النشط
+      showPreparationPhase();
+    }
+  }
+
+  function showPreparationPhase() {
+    $('preparationPhase').style.display = 'flex';
+    $('activeChallenge').style.display = 'none';
+    $('sessionResult').style.display = 'none';
+  }
+
+  function showActiveChallenge() {
+    $('preparationPhase').style.display = 'none';
+    $('activeChallenge').style.display = 'flex';
+    $('sessionResult').style.display = 'none';
+  }
+
+  // ========== تحديث محتوى التدريب اليومي ==========
+  function updateTrainingScreen() {
+    const levelObj = APP.levels.find(l => l.level === APP.user.level) || APP.levels[0];
+    $('currentLevelBadge').textContent = `Level ${levelObj.level}`;
+    $('targetTimeDisplay').textContent = levelObj.time;
+    $('chapterNumber').textContent = APP.user.level; // الفصل يعكس المستوى
+    APP.timer.target = levelObj.time;
+    $('timerText').textContent = '0';
+    $('timerCircle').style.strokeDashoffset = '0';
+
+    // توليد بيانات الإحماء والتحدي
+    const chapterData = getChapterData(APP.user.level);
+    renderWarmupSteps(chapterData.preparationPhase.steps);
+    $('challengeDescription').textContent = chapterData.coreChallenge.description;
+    $('scienceNote').textContent = chapterData.scienceNote;
+  }
+
+  function getChapterData(level) {
+    // طور الإعداد ثابت علمياً مع بعض الإضافات
+    const preparationPhase = {
+      title: "🧘 طور الإعداد",
+      steps: [
+        "1. استلقِ في وضعية Shavasana وأغلق عينيك، ركز على استرخاء كل عضلة (دقيقتان).",
+        "2. تنفس حجابي عميق: شهيق من الأنف 4 ثوانٍ، زفير من الفم 6 ثوانٍ (5 دقائق).",
+        "3. أدر مفاصل الجسم بلطف: كاحلين، ركبتين، حوض، كتفين، رقبة، معصمين (3 دقائق).",
+        "4. إحماء الحجاب الحاجز: زفير سلبي، احبس أنفاسك وحرك الحجاب الحاجز لأعلى وأسفل 15 ث، كرر 3 مرات.",
+        "5. تمديد الرئة المفرغة: اسحب ركبتيك لصدرك مع زفير كامل، اثبت 15-30 ث، كرر 5 مرات."
+      ]
+    };
+
+    let coreChallenge = {};
+    let scienceNote = "";
+
+    if (level <= 4) {
+      coreChallenge = {
+        title: "جداول ثاني أكسيد الكربون (CO₂ Tables)",
+        description: "ثبت وقت الكتم عند 50% من أفضل أداء شخصي لك. قلل وقت الاستراحة تدريجياً بين كل محاولة والأخرى. مثال: 4 جولات، استراحة تبدأ من 90 ثانية وتقل إلى 30 ثانية."
+      };
+      scienceNote = "يبني التحمل لارتفاع ثاني أكسيد الكربون الذي يسبب الرغبة في التنفس. التدريب على هذا الإحساس يطيل وقت الكتم بأمان.";
+    } else if (level <= 9) {
+      coreChallenge = {
+        title: "جداول الأكسجين (O₂ Tables)",
+        description: "ثبت وقت الاستراحة عند دقيقتين. قم بزيادة وقت الكتم تدريجياً نحو 85% من أفضل أداء شخصي. مثال: 4 جولات، تبدأ من 50% ثم تزيد."
+      };
+      scienceNote = "يعلم الجسم العمل بكفاءة مع مستويات أكسجين منخفضة. لا تمارس هذه الجداول في الماء أبداً.";
+    } else if (level <= 14) {
+      coreChallenge = {
+        title: "المشي مع كتم النفس (Apnea Walks)",
+        description: "خذ شهيقاً عميقاً وابدأ المشي بوتيرة طبيعية مع كتم النفس. توقف واجلس عند أول رغبة حقيقية في التنفس. سجل الوقت والمسافة."
+      };
+      scienceNote = "يحاكي استهلاك الأكسجين أثناء الحركة كما في الغوص. يعزز قدرة الجسم على تحمل الضغط أثناء الكتم.";
+    } else if (level <= 19) {
+      coreChallenge = {
+        title: "القرفصاء مع كتم النفس (Apnea Squats)",
+        description: "اجلس على كرسي، احبس أنفاسك لمدة 60 ثانية، ثم قم بأكبر عدد ممكن من القرفصاء. تنفس واسترح، كرر التمرين."
+      };
+      scienceNote = "يجمع بين تحمل ثاني أكسيد الكربون والقوة العضلية، ضروري للغطاسين المحترفين.";
+    } else {
+      coreChallenge = {
+        title: "محاكاة شخصية متقدمة",
+        description: "صمم جداول أكسجين وثاني أكسيد الكربون معقدة بناءً على بيانات أدائك. جرب الغوص الحر الجاف (Dry Apnea) مع تخيل النزول والصعود."
+      };
+      scienceNote = "في المستويات العليا، تصبح قادراً على تصميم تدريبك الخاص. استخدم بياناتك لتجاوز حدودك.";
+    }
+
+    return { preparationPhase, coreChallenge, scienceNote };
+  }
+
+  function renderWarmupSteps(steps) {
+    const container = $('warmupSteps');
+    container.innerHTML = steps.map(step => {
+      return `<div class="step-item"><span class="step-num">✓</span><span>${step}</span></div>`;
+    }).join('');
+  }
+
+  // ========== بدء التحدي ==========
+  function startChallenge() {
+    // تحذير أمان قبل البدء
+    if (confirm("تنبيه أمان:\n- لا تفرط في التنفس السريع قبل الكتم.\n- توقف فوراً إذا شعرت بدوار أو ضغط شديد.\n- تدرب دائماً برفقة شخص آخر إذا كنت في الماء.\n\nهل أنت مستعد للبدء؟")) {
+      showActiveChallenge();
+      startBreathHold();
+    }
+  }
+
+  function startBreathHold() {
+    if (APP.timer.isRunning) return;
+    APP.timer.isRunning = true;
+    APP.timer.startTime = Date.now() - (APP.timer.elapsed * 1000);
+    APP.timer.intervalId = setInterval(updateTimer, 50);
+    $('stopChallengeBtn').style.display = 'inline-flex';
+    $('sessionResult').style.display = 'none';
+    $('feedbackMsg').textContent = '';
+    playBreathSound(true);
+    vibrate(50);
+    animateLungs(true);
+  }
+
+  function stopBreathHold() {
+    if (!APP.timer.isRunning) return;
+    clearInterval(APP.timer.intervalId);
+    APP.timer.isRunning = false;
+    $('stopChallengeBtn').style.display = 'none';
+    playBreathSound(false);
+    vibrate([100, 50, 100]);
+    animateLungs(false);
+    const finalTime = Math.floor(APP.timer.elapsed);
+    handleSessionResult(finalTime);
+  }
+
+  function updateTimer() {
+    const now = Date.now();
+    APP.timer.elapsed = (now - APP.timer.startTime) / 1000;
+    const displayTime = Math.floor(APP.timer.elapsed);
+    $('timerText').textContent = displayTime;
+
+    const circumference = 2 * Math.PI * 90;
+    const offset = circumference * (1 - Math.min(1, APP.timer.elapsed / APP.timer.target));
+    $('timerCircle').style.strokeDashoffset = offset;
+
+    if (APP.timer.elapsed >= APP.timer.target) {
+      stopBreathHold();
+    }
+    if (APP.timer.target - APP.timer.elapsed <= 5 && APP.timer.target - APP.timer.elapsed > 0) {
+      $('timerCircle').style.stroke = '#ff3cac';
+    } else {
+      $('timerCircle').style.stroke = 'url(#gradient)';
+    }
+  }
+
+  function handleSessionResult(holdTime) {
+    const levelObj = APP.levels.find(l => l.level === APP.user.level);
+    const target = levelObj.time;
+    const achieved = holdTime >= target;
+    const oxygenEarned = Math.floor(holdTime / 5) + (achieved ? 15 : 5);
+
+    if (holdTime > APP.user.bestTime) APP.user.bestTime = holdTime;
+    APP.user.oxygenPoints += oxygenEarned;
+
+    if (achieved && APP.user.level < 25) {
+      APP.user.level++;
+      if (!APP.user.achievements.includes('levelUp')) APP.user.achievements.push('levelUp');
+      $('feedbackMsg').textContent = '🎉 لقد ارتقيت إلى المستوى التالي!';
+    } else if (achieved) {
+      $('feedbackMsg').textContent = '🏆 أقصى مستوى! أنت أسطورة.';
+    } else {
+      $('feedbackMsg').textContent = '💪 تدريب جيد، استمر في المحاولة.';
+    }
+
+    updateStreak();
+    saveUserData();
+
+    $('sessionResult').style.display = 'block';
+    $('bestTimeDisplay').textContent = APP.user.bestTime + ' ثانية';
+    $('oxygenEarned').textContent = oxygenEarned;
+    updateProfileScreen();
+  }
+
+  function updateStreak() {
+    const today = new Date().toDateString();
+    const last = APP.user.lastTrainingDate;
+    if (last === today) return;
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (last === yesterday) {
+      APP.user.streak++;
+    } else if (last !== today) {
+      if (APP.user.streak > 0) APP.user.level = Math.max(1, APP.user.level - 1); // Recovery mode
+      APP.user.streak = 1;
+    }
+    APP.user.lastTrainingDate = today;
+    saveUserData();
+  }
+
+  function backToPreparation() {
+    // العودة إلى قائمة الإعداد مع تحديث البيانات
+    updateTrainingScreen();
+    showPreparationPhase();
+    // إعادة تعيين المؤقت
+    APP.timer.elapsed = 0;
+    $('timerText').textContent = '0';
+    $('timerCircle').style.strokeDashoffset = '0';
+  }
+
+  // ========== الملف الشخصي ==========
+  function updateProfileScreen() {
+    const lvl = APP.levels.find(l => l.level === APP.user.level) || APP.levels[0];
+    $('profileLevel').textContent = APP.user.level;
+    $('rankTitle').textContent = lvl.title;
+    $('profileBestTime').textContent = APP.user.bestTime;
+    $('streakDays').textContent = APP.user.streak;
+    $('oxygenPoints').textContent = APP.user.oxygenPoints;
+    const nextLevel = APP.user.level < 25 ? APP.levels[APP.user.level] : null;
+    if (nextLevel) {
+      const progress = Math.min(100, (APP.user.bestTime / nextLevel.time) * 100);
+      $('xpProgress').style.width = progress + '%';
+    } else {
+      $('xpProgress').style.width = '100%';
+    }
+    $('achievementsList').textContent = APP.user.achievements.length ? APP.user.achievements.join(' · ') : 'لا توجد';
+  }
+
+  // ========== المؤثرات ==========
+  let audioCtx = null;
+  function playBreathSound(start) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (start) {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 80;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0.1;
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      window._breathOsc = osc;
+    } else {
+      if (window._breathOsc) {
+        window._breathOsc.stop();
+        window._breathOsc = null;
+      }
+    }
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  let lungAnimFrame;
+  function animateLungs(active) {
+    const left = document.getElementById('lungLeft');
+    const right = document.getElementById('lungRight');
+    if (!left || !right) return;
+    if (active) {
+      let scale = 1, dir = 1;
+      function step() {
+        scale += 0.02 * dir;
+        if (scale > 1.3) dir = -1;
+        if (scale < 0.9) dir = 1;
+        left.setAttribute('transform', `translate(27,25) scale(${scale}) translate(-27,-25)`);
+        right.setAttribute('transform', `translate(63,25) scale(${scale}) translate(-63,-25)`);
+        lungAnimFrame = requestAnimationFrame(step);
+      }
+      step();
+    } else {
+      cancelAnimationFrame(lungAnimFrame);
+      left.setAttribute('transform', '');
+      right.setAttribute('transform', '');
+    }
+  }
+
+  function toggleNightMode() {
+    document.body.classList.toggle('night-mode');
+    APP.user.nightMode = document.body.classList.contains('night-mode');
+    saveUserData();
+    const thumb = $('toggleThumb');
+    if (thumb) thumb.style.left = APP.user.nightMode ? '2px' : '28px';
+  }
+
+  // ========== بدء التشغيل ==========
+  document.addEventListener('DOMContentLoaded', () => {
+    loadUserData();
+    if (!APP.user.nightMode) {
+      document.body.classList.remove('night-mode');
+      $('toggleThumb').style.left = '28px';
+    }
+    navigateTo('splash');
+    setInterval(saveUserData, 5000);
+  });
+</script>
+</body>
+</html>
